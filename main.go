@@ -21,25 +21,18 @@ func main() {
 		var id uint64
 		err := db.Update(func(tx *bolt.Tx) error {
 			bucket := tx.Bucket([]byte("MyBucket"))
-			if (bucket == nil) {
+			if bucket == nil {
 				bucket, err = tx.CreateBucket([]byte("MyBucket"))
 			}
 
 			value := bucket.Get([]byte("a"))
-			var num uint64 = 1
-			if (value == nil) {
-				buf := new(bytes.Buffer)
-				binary.Write(buf, binary.BigEndian, num)
-				value = buf.Bytes()
+			if value == nil {
+				value = toBytes(1)
 				bucket.Put([]byte("a"), value)
 			}
 
-			id = binary.BigEndian.Uint64(value)
-			num = id + 1
-			buf := new(bytes.Buffer)
-			binary.Write(buf, binary.BigEndian, num)
-
-			err := bucket.Put([]byte("a"), buf.Bytes())
+			id = toInt(value)
+			err := bucket.Put([]byte("a"), toBytes(id+1))
 
 			return err
 		})
@@ -51,4 +44,14 @@ func main() {
 
 	http.HandleFunc("/", handler)
 	http.ListenAndServe(":8080", nil)
+}
+
+func toInt(value []byte) uint64 {
+	return binary.BigEndian.Uint64(value)
+}
+
+func toBytes(num uint64) []byte {
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.BigEndian, num)
+	return buf.Bytes()
 }
